@@ -1,0 +1,65 @@
+---
+title: "Cross-correlation"
+author: "Kevin Wang"
+date: "13/03/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(forecast)
+library(nCov2019)
+library(patchwork)
+
+theme_set(theme_bw(18) +
+            theme(legend.position = "bottom"))
+```
+
+
+```{r}
+all_data = load_nCov2019(lang = 'en', source='github')
+cum_data = all_data['global'] %>% 
+            dplyr::filter(country %in% c("China", "United States")) %>% 
+  dplyr::select(time, country, cum_confirm)
+
+cum_data_wide = cum_data %>% 
+  pivot_wider(names_from = country, 
+              values_from = cum_confirm)
+
+ggCcf(cum_data_wide$China, 
+      cum_data_wide$`United States`)
+```
+
+
+```{r}
+added_data = cum_data %>% 
+  group_by(country) %>% 
+  dplyr::mutate(added_cases = cum_confirm - lag(cum_confirm, 1)) %>%
+  dplyr::select(-cum_confirm)
+
+
+
+added_data_wide = added_data %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = country, 
+              values_from = added_cases)
+
+
+added_data %>% 
+  ggplot(aes(x = time, y = added_cases,
+             colour = country)) +
+  geom_path() +
+  scale_y_log10() +
+  labs(title = "Added cases") + 
+  ggCcf(added_data_wide$China, 
+      added_data_wide$`United States`) +
+  labs("Cross correlation") +
+  plot_layout(nrow = 2)
+```
+
+
+# Session Info 
+```{r}
+sessioninfo::session_info()
+```
+
