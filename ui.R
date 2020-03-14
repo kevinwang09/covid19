@@ -9,7 +9,7 @@ shinyUI(fluidPage(
         ),
         mainPanel(
             shiny::plotOutput(outputId = "cum_confirm_plot"),
-            shiny::plotOutput(outputId = "added_plots")
+            shiny::plotOutput(outputId = "added_plots", height = "800px")
         )
     )
 ))

@@ -1,7 +1,6 @@
 shinyServer(function(input, output) {
     
     cum_data = reactive({
-        req(length(input$country) == 1)
         all_data['global'] %>% 
             dplyr::filter(country %in% c("China", input$country))
     })
@@ -10,7 +9,7 @@ shinyServer(function(input, output) {
         cum_data() %>% 
             group_by(country) %>% 
             dplyr::mutate(added_cases = cum_confirm - lag(cum_confirm, 1)) %>%
-            dplyr::select(-cum_confirm)
+            dplyr::select(time, country, added_cases)
     })
     
     added_data_wide = reactive({
@@ -43,9 +42,10 @@ shinyServer(function(input, output) {
             geom_path() +
             scale_y_log10() +
             labs(title = "Added cases") + 
+            scale_color_brewer(palette = "Set1") +
             ggCcf(wide_data %>% pull(China), 
                   wide_data %>% pull(input$country)) +
-            labs("Cross correlation") +
+            labs(title = paste0("Cross correlation between added cases in China and ", input$country)) +
             plot_layout(nrow = 2)
     })
     
