@@ -1,0 +1,17 @@
+---
+title: "Plotting confirmed cases on map"
+author: "Kevin Wang"
+date: "14/03/2020"
+output: html_document
+---
+
+```{r}
+library(nCov2019)
+library(tidyverse)
+```
+
+```{r}
+x = get_nCov2019(lang = 'en')
+plot(x, continuous_scale = FALSE, palette = "Spectral")
+```
+
