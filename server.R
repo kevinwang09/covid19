@@ -28,7 +28,7 @@ shinyServer(function(input, output) {
             scale_y_log10(labels = scales::comma) +
             labs(x = "Time", 
                  y = "Cumulative confirmed cases",
-                 title = "nCov-19 in selected countries") +
+                 title = "Cumulative confirmed cases of COVID-19") +
             scale_color_brewer(palette = "Set1")
     })
     
@@ -41,11 +41,14 @@ shinyServer(function(input, output) {
                        colour = country)) +
             geom_path() +
             scale_y_log10() +
-            labs(title = "Added cases") + 
+            labs(title = "Added cases through time") + 
             scale_color_brewer(palette = "Set1") +
             ggCcf(wide_data %>% pull(China), 
-                  wide_data %>% pull(input$country)) +
-            labs(title = paste0("Cross correlation between added cases in China and ", input$country)) +
+                  wide_data %>% pull(input$country), 
+                  lag.max = 20) +
+            scale_x_continuous(limits = c(NA, 0)) +
+            labs(title = paste0("Cross-correlation between added cases in China and ", input$country),
+                 subtitle = "Only lags behind China are shown") +
             plot_layout(nrow = 2)
     })
     
