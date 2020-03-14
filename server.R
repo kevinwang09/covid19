@@ -2,7 +2,7 @@ shinyServer(function(input, output) {
     
     filter_data = reactive({
         sub_data = all_data['global'] %>% 
-            dplyr::filter(country %in% input$country)
+            dplyr::filter(country %in% c("China", input$country))
         
         return(sub_data)
     })
@@ -16,6 +16,7 @@ shinyServer(function(input, output) {
             scale_y_log10(labels = scales::comma) +
             labs(x = "Time", 
                  y = "Cumulative confirmed cases",
-                 title = "nCov-19 in selected countries")
+                 title = "nCov-19 in selected countries") +
+            scale_color_brewer(palette = "Set1")
     })
 })
