@@ -20,7 +20,7 @@ world_history_data <- dplyr::left_join(confirmed_world, death_world,by = c("Prov
 world_history_data <- dplyr::left_join(world_history_data, recovered_world, by = c("Province/State", "Country/Region", "Lat", "Long", "Date"))
 world_history_data$Date <- as.Date(as.character(world_history_data$Date), format = c("%m/%d/%y"))
 colnames(world_history_data) <- make.names(colnames(world_history_data))
-latest_date = max(world_history_data$Date)
+latest_date = max(world_history_data$Date - 1L) ## Max date might not be available, use the previous day
 world_history_data_summary <- world_history_data %>% 
   group_by(Country.Region, Date) %>% 
   filter(Date == latest_date) %>%
@@ -87,10 +87,12 @@ names(region_col) <- levels(cut(0:max(breaks),
                                 breaks = breaks,
                                 include.lowest = T, right = F))
 world_history_data_all <- world_history_data %>% filter(Date == latest_date)
-world_map_with_data$Confirmed[is.na(world_map_with_data$Confirmed)] <- 0
-world_map_with_data$Comfirmed_number <- cut(as.numeric(world_map_with_data$Confirmed),
-                                            breaks,
-                                            include.lowest = T, right = F)
+world_history_data_all$Confirmed[is.na(world_history_data_all$Confirmed)] <- 0
+world_history_data_all$Comfirmed_number <- cut(as.numeric(world_history_data_all$Confirmed),
+                                               breaks,
+                                               include.lowest = T, right = F)
+
+## Seemed to have a typo here between world_history_data_all and world_history_data
 
 ### ggplot
 
@@ -99,10 +101,11 @@ world <- ggplot() +
   theme_map() 
 
 world + 
-  geom_point(aes(x = Long, y = Lat, size = Confirmed), 
+  geom_point(aes(x = Long, y = Lat, 
+                 size = Confirmed + 1L, ## You can't take log of 0, so add a psudo 1
+                 colour = Comfirmed_number), 
              data = world_history_data_all, 
-             colour = "blue",
              alpha = .5) +  
-  scale_color_brewer(palette = "Spectral", direction = -1) + 
+  scale_colour_brewer(palette = "Spectral", direction = -1) + 
   scale_size_continuous(range=c(1,8), breaks = breaks[3:10], trans = "log") +
   labs(title = paste('COVID19'))
