@@ -8,10 +8,90 @@ output: html_document
 ```{r}
 library(nCov2019)
 library(tidyverse)
+library(gganimate)
+library(maps)
+library(ggthemes)
 ```
 
 ```{r}
 x = get_nCov2019(lang = 'en')
 plot(x, continuous_scale = FALSE, palette = "Spectral")
 ```
+
+
+# Jean's code 
+```{r}
+all_data = load_nCov2019(lang = 'en', source='github')
+global_data = all_data[["global"]]
+
+world_map = map_data('world', region = ".")
+
+world_data = global_data %>% 
+  left_join(world_map, by = c("country" = "region")) %>% 
+  as_tibble() %>% 
+  dplyr::mutate(
+    cum_confirm_cat = cut(cum_confirm, 
+                          breaks = c(0, 10, 50, 100, 500, 1000, 5000, 10000, 100000),
+                          include.lowest = T, right = F))
+
+
+## Modification on Jean's code
+
+world_data %>% 
+  dplyr::filter(time == "2020-03-10") %>% 
+  ggplot() +
+  borders("world", colour = "gray85", fill = "gray80") +
+  geom_point(aes(x = long, y = lat, colour = cum_confirm_cat),
+             alpha = .5) +
+  scale_colour_brewer(palette = "Spectral") +
+  theme_map()
+```
+
+
+# Kevin's code
+
+```{r}
+global_stats = global_data %>% 
+  dplyr::mutate(
+    region = country, 
+    cum_confirm_cat = cut(cum_confirm, 
+                          breaks = c(0, 10, 50, 100, 500, 1000, 5000, 10000, 100000),
+                          include.lowest = T, right = F))
+
+## map_id must exisit in both global_stats data nd the world_map data
+
+global_stats %>% 
+  dplyr::filter(time == "2020-03-10") %>% 
+  ggplot(aes(map_id = region)) + 
+  geom_map(aes(fill = cum_confirm_cat), map = world_map) +
+  expand_limits(x = world_map$long, y = world_map$lat) +
+  scale_fill_brewer(palette = "Spectral") +
+  theme_map() 
+```
+
+
+```{r}
+library(gganimate)
+
+p = global_stats %>% 
+  ggplot(aes(map_id = region)) + 
+  geom_map(aes(fill = cum_confirm_cat), map = world_map) +
+  geom_text(aes(label = as.character(time)), 
+            x = max(world_map$long) + 10,
+            y = max(world_map$lat) + 10) +
+  scale_fill_brewer(palette = "Spectral") +
+  expand_limits(x = world_map$long + 30, y = world_map$lat + 10) +
+  theme_map() +
+  # labs(title = 'Date: {frame_time}') +
+  transition_reveal(time)
+
+animate(p, fps = 3)
+```
+
+
+# Sesion info 
+```{r}
+sessionInfo()
+```
+
 
