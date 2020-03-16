@@ -63,9 +63,10 @@ global_stats = global_data %>%
 global_stats %>% 
   dplyr::filter(time == "2020-03-10") %>% 
   ggplot(aes(map_id = region)) + 
-  geom_map(aes(fill = cum_confirm_cat), map = world_map) +
+  geom_map(aes(fill = cum_confirm), map = world_map) +
   expand_limits(x = world_map$long, y = world_map$lat) +
-  scale_fill_brewer(palette = "Spectral") +
+  scale_fill_gradientn(colours = RColorBrewer::brewer.pal(9, "Spectral"), trans = "log") +
+  # scale_fill_brewer(palette = "Spectral") +
   theme_map() 
 ```
 

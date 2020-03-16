@@ -1,0 +1,129 @@
+---
+title: "Animating flights with confirmed cases of COVID19"
+author: "Kevin Wang"
+date: "15/03/2020"
+output: html_document
+---
+
+# Loading packages
+```{r}
+library(tidyverse)
+library(rvest)
+library(xml2)
+library(lubridate)
+library(gganimate)
+library(ggmap)
+```
+
+# Loading data
+```{r}
+url = "https://www.health.nsw.gov.au/Infectious/diseases/Pages/coronavirus-flights.aspx"
+```
+
+
+```{r}
+raw = xml2::read_html(url)
+
+## https://stackoverflow.com/questions/52855989/scrape-aspx-page-with-r
+raw_flights_tbl = raw %>%
+  rvest::html_node(xpath = ".//div[@id='ctl00_PlaceHolderMain_contentc1__ControlWrapper_RichHtmlField']/table") %>%
+  rvest::html_table() %>% 
+  as_tibble() %>% 
+  janitor::clean_names()
+
+raw_flights_tbl %>% class
+```
+
+
+# Clean data
+```{r}
+flights_tbl = raw_flights_tbl %>% 
+  dplyr::mutate(date_of_departure = date_of_departure %>% dmy() %>% as_datetime(),
+                date_of_arrival = date_of_arrival %>% dmy() %>% as_datetime()) %>%
+  tidyr::separate(col = origin_destination, 
+                  into = c("origin", "destination"),
+                  sep = "/") %>% 
+  tibble::rowid_to_column("plane_id") ## Avoid repeated flight_number
+
+glimpse(flights_tbl)
+```
+
+
+# Location query through Google Maps (API needed)
+```{r, eval = FALSE}
+all_geocode = tibble(
+  location = c(flights_tbl$origin, flights_tbl$destination) %>% unique,
+  geocode = purrr::map(location, ggmap::geocode))
+
+saveRDS(all_geocode, file = "data/all_geocode.rds")
+```
+
+
+
+```{r}
+all_geocode = readRDS("data/all_geocode.rds")
+
+flights_location_tbl = flights_tbl %>% 
+  left_join(all_geocode, by = c("origin" = "location")) %>% 
+  left_join(all_geocode, by = c("destination" = "location"), 
+            suffix = c("_origin", "_destination")) %>% 
+  unnest(c(geocode_origin, geocode_destination), names_sep = "_")
+
+world_map = borders("world", colour="gray80", fill="gray80")
+```
+
+
+# Creating transition data
+
+```{r}
+glimpse(flights_location_tbl)
+
+flights_trans_tbl = flights_location_tbl %>% 
+  group_by(plane_id) %>% 
+  dplyr::mutate(
+    trans_time = purrr::map2(.x = date_of_departure, 
+                             .y = date_of_arrival, 
+                             .f = ~ seq(.x, .y, by = "1 hours")),
+    trans_lon = purrr::pmap(
+      .l = list(geocode_origin_lon, geocode_destination_lon, trans_time),
+      .f = function(olon, dlon, ttime){
+        seq(olon, dlon, length.out = length(ttime))
+      }),
+    trans_lat = purrr::pmap(
+      .l = list(geocode_origin_lat, geocode_destination_lat, trans_time),
+      .f = function(olat, dlat, ttime){
+        seq(olat, dlat, length.out = length(ttime))
+      })) %>% 
+  unnest(c(trans_time, trans_lon, trans_lat))
+
+p = flights_trans_tbl %>%
+  dplyr::arrange(trans_time) %>% 
+  ggplot() +
+  world_map +
+  geom_point(aes(x = trans_lon, y = trans_lat),
+             colour = "red") +
+  geom_segment(aes(x = geocode_origin_lon, y = geocode_origin_lat,
+                   xend = trans_lon, yend = trans_lat)) +
+  geom_text(aes(label = origin,
+                x = geocode_origin_lon,
+                y = geocode_origin_lat)) +
+  geom_text(aes(label = destination,
+                x = geocode_destination_lon,
+                y = geocode_destination_lat)) +
+  geom_text(aes(label = trans_time,
+                x = max(geocode_origin_lon + 30),
+                y = max(geocode_origin_lat + 30))) +
+  theme_nothing() +
+  transition_manual(trans_time)
+
+p
+
+# gganimate::anim_save(filename = "flight.gif", animation = p)
+```
+
+
+
+```{r}
+sessioninfo::session_info()
+```
+
