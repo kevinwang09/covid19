@@ -7,7 +7,7 @@ The main app visualises the cumulative/added confirmed cases of a selected count
 
 The main idea is to understand how many days of lags exist between China's rapid increases and the selected country. 
 
-E.g. Based on the plots below, it seems like USA lags behind China roughly 30 days. 
+E.g. Based on the plots below, it seems like USA lags behind China roughly 30-45 days. 
 
 ![](figures/usa_15_Mar_2020.png)
 
