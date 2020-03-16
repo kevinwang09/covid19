@@ -45,7 +45,7 @@ shinyServer(function(input, output) {
             scale_color_brewer(palette = "Set1") +
             ggCcf(wide_data %>% pull(China), 
                   wide_data %>% pull(input$country), 
-                  lag.max = 20) +
+                  lag.max = 60) +
             scale_x_continuous(limits = c(NA, 0)) +
             labs(title = paste0("Cross-correlation between added cases in China and ", input$country),
                  subtitle = "Only lags behind China are shown") +
