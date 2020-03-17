@@ -32,7 +32,7 @@ shinyServer(function(input, output) {
             scale_color_brewer(palette = "Set1")
     })
     
-    output$added_plots = renderPlot({
+    output$added_plot = renderPlot({
         long_data = added_data()
         wide_data = added_data_wide()
         
@@ -42,14 +42,23 @@ shinyServer(function(input, output) {
             geom_path() +
             scale_y_log10() +
             labs(title = "Added cases through time") + 
-            scale_color_brewer(palette = "Set1") +
-            ggCcf(wide_data %>% pull(China), 
-                  wide_data %>% pull(input$country), 
-                  lag.max = 60) +
+            scale_color_brewer(palette = "Set1")
+    })
+    
+    
+    output$crosscorr_plot = renderPlot({
+        wide_data = added_data_wide()
+        
+        ggCcf(wide_data %>% pull(China), 
+              wide_data %>% pull(input$country), 
+              lag.max = 60) +
             scale_x_continuous(limits = c(NA, 0)) +
             labs(title = paste0("Cross-correlation between added cases in China and ", input$country),
                  subtitle = "Only lags behind China are shown") +
             plot_layout(nrow = 2)
     })
+    
+    
+    
     
 })
