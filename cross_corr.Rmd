@@ -45,17 +45,35 @@ added_data_wide = added_data %>%
               values_from = added_cases)
 
 
-added_data %>% 
+p = added_data %>% 
   ggplot(aes(x = time, y = added_cases,
              colour = country)) +
   geom_path() +
   scale_y_log10() +
-  labs(title = "Added cases") + 
-  ggCcf(added_data_wide$China, 
+  labs(title = "Added cases")
+
+p
+
+ggCcf(added_data_wide$China, 
       added_data_wide$`United States`) +
-  labs("Cross correlation") +
-  plot_layout(nrow = 2)
+  labs("Cross correlation") 
 ```
+
+
+```{r}
+max(added_data$time)
+(added_data$time %>% head)-1
+
+shift_data = added_data %>% 
+  dplyr::filter(country == "United States") %>% 
+  dplyr::mutate(shift_time = time - 45)
+
+p +
+  geom_path(data = shift_data, 
+            aes(x = shift_time,
+                y = added_cases), linetype = "dashed")
+```
+
 
 
 # Session Info 

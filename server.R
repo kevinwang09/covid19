@@ -26,25 +26,34 @@ shinyServer(function(input, output) {
                        colour = country)) +
             geom_path(size = 1.2) +
             scale_y_log10(labels = scales::comma) +
+            scale_color_brewer(palette = "Set1") +
             labs(x = "Time", 
                  y = "Cumulative confirmed cases",
-                 title = "Cumulative confirmed cases of COVID-19") +
-            scale_color_brewer(palette = "Set1")
+                 title = "Cumulative confirmed cases of COVID-19")
     })
     
     output$added_plot = renderPlot({
         long_data = added_data()
-        wide_data = added_data_wide()
         
+        shift_data = long_data %>% 
+            dplyr::filter(country == input$country) %>% 
+            dplyr::mutate(shift_time = time - input$lag)
+
         long_data %>% 
             ggplot(aes(x = time, y = added_cases,
                        colour = country)) +
             geom_path() +
-            scale_y_log10() +
-            labs(title = "Added cases through time") + 
-            scale_color_brewer(palette = "Set1")
+            geom_path(data = shift_data, 
+                      aes(x = shift_time,
+                          y = added_cases), linetype = "dashed") +
+            scale_color_brewer(palette = "Set1") +
+            scale_y_continuous(trans = "log1p", breaks = 10^c(0:4)) + 
+            labs(title = "Added cases through time",
+                 subtitle = paste0("Dashed line shows the selected country lagged ", 
+                                   input$lag, " days"),
+                 x = "Time", 
+                 y = "Added cases (log-scale)") 
     })
-    
     
     output$crosscorr_plot = renderPlot({
         wide_data = added_data_wide()
