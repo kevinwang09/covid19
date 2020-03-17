@@ -1,7 +1,7 @@
 library(tidyverse)
 library(forecast)
 library(nCov2019)
-library(patchwork)
+library(ggrepel)
 
 all_data = load_nCov2019(lang = 'en', source='github')
 

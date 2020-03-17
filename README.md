@@ -14,9 +14,8 @@ E.g. Based on the plots below (15th March 2020), it seems like USA lags behind C
 ```
 library(tidyverse)
 library(shiny)
-library(tidyverse)
 library(forecast)
-library(patchwork)
+library(ggrepel)
 library(nCov2019)
 ## devtools::install_github("GuangchuangYu/nCov2019")
 

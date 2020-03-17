@@ -2,28 +2,32 @@ shinyServer(function(input, output) {
     
     cum_data = reactive({
         all_data['global'] %>% 
-            dplyr::filter(country %in% c("China", input$country))
+            dplyr::filter(country %in% c("China", input$country)) %>% 
+            dplyr::mutate(last_cum_confirm = ifelse(time == max(time), cum_confirm, NA)) %>% 
+            dplyr::select(time, country, cum_confirm, last_cum_confirm)
     })
     
     added_data = reactive({
         cum_data() %>% 
             group_by(country) %>% 
-            dplyr::mutate(added_cases = cum_confirm - lag(cum_confirm, 1)) %>%
-            dplyr::select(time, country, added_cases)
+            dplyr::mutate(added_cases = cum_confirm - lag(cum_confirm, 1),
+                          last_added_cases = ifelse(time == max(time), added_cases, NA)) %>%
+            dplyr::select(time, country, added_cases, last_added_cases)
     })
     
     cum_data_wide = reactive({
         cum_data() %>% 
-            dplyr::select(time, country, cum_confirm) %>% 
             ungroup() %>% 
-            pivot_wider(names_from = country, 
+            pivot_wider(id_cols = c("time", "last_cum_confirm"), 
+                        names_from = country, 
                         values_from = cum_confirm)
     })
     
     added_data_wide = reactive({
         added_data() %>% 
             ungroup() %>% 
-            pivot_wider(names_from = country, 
+            pivot_wider(id_cols = c("time", "last_added_cases"), 
+                        names_from = country, 
                         values_from = added_cases)
     })
     
@@ -46,6 +50,7 @@ shinyServer(function(input, output) {
             geom_vline(xintercept = as.Date("2020-01-23"), colour = "black") +
             annotate(geom = "text", label = "Wuhan \n lockdown",
                      x = as.Date("2020-01-21"), y = 3e4, angle = 90) +
+            geom_label_repel(aes(label = last_cum_confirm)) +
             scale_color_brewer(palette = "Set1") +
             scale_y_continuous(trans = "log1p", 
                                breaks = c(10^c(0:5), 5*(10^c(0:4))), 
@@ -64,7 +69,7 @@ shinyServer(function(input, output) {
         added_shift_data = long_data %>% 
             dplyr::filter(country == input$country) %>% 
             dplyr::mutate(shift_time = time - input$lag)
-
+        
         long_data %>% 
             ggplot(aes(x = time, y = added_cases,
                        colour = country)) +
@@ -75,6 +80,7 @@ shinyServer(function(input, output) {
             geom_vline(xintercept = as.Date("2020-01-23"), colour = "black") +
             annotate(geom = "text", label = "Wuhan \n lockdown",
                      x = as.Date("2020-01-21"), y = 2e3, angle = 90) +
+            geom_label_repel(aes(label = last_added_cases)) +
             scale_color_brewer(palette = "Set1") +
             scale_y_continuous(trans = "log1p", 
                                breaks = c(10^c(0:5), 5*(10^c(0:4))),
@@ -95,8 +101,7 @@ shinyServer(function(input, output) {
               lag.max = 60) +
             scale_x_continuous(limits = c(NA, 0)) +
             labs(title = paste0("Cross-correlation between added cases in China and ", input$country),
-                 subtitle = "Only lags behind China are shown") +
-            plot_layout(nrow = 2)
+                 subtitle = "Only lags behind China are shown") 
     })
     
     output$cum_crosscorr_plot = renderPlot({
@@ -107,8 +112,7 @@ shinyServer(function(input, output) {
               lag.max = 60) +
             scale_x_continuous(limits = c(NA, 0)) +
             labs(title = paste0("Cross-correlation between cumulative cases in China and ", input$country),
-                 subtitle = "Only lags behind China are shown") +
-            plot_layout(nrow = 2)
+                 subtitle = "Only lags behind China are shown")
     })
     
 })
