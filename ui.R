@@ -13,9 +13,12 @@ shinyUI(fluidPage(
         mainPanel(
             tabsetPanel(
                 type = "tabs",
-                tabPanel("Cumulative confirmed cases", shiny::plotOutput(outputId = "cum_confirm_plot", height = "400px")),
-                tabPanel("Added confirmed cases", shiny::plotOutput(outputId = "added_plot", height = "400px")),
-                tabPanel("Cross-correlation of added cases", shiny::plotOutput(outputId = "crosscorr_plot", height = "800px"))
+                tabPanel("Cumulative confirmed cases", 
+                         shiny::plotOutput(outputId = "cum_confirm_plot", height = "400px"),
+                         shiny::plotOutput(outputId = "cum_crosscorr_plot", height = "800px")),
+                tabPanel("Added confirmed cases", 
+                         shiny::plotOutput(outputId = "added_plot", height = "400px"),
+                         shiny::plotOutput(outputId = "added_crosscorr_plot", height = "800px"))
             )
         )
     )

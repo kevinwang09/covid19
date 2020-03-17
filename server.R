@@ -12,6 +12,14 @@ shinyServer(function(input, output) {
             dplyr::select(time, country, added_cases)
     })
     
+    cum_data_wide = reactive({
+        cum_data() %>% 
+            dplyr::select(time, country, cum_confirm) %>% 
+            ungroup() %>% 
+            pivot_wider(names_from = country, 
+                        values_from = cum_confirm)
+    })
+    
     added_data_wide = reactive({
         added_data() %>% 
             ungroup() %>% 
@@ -34,14 +42,20 @@ shinyServer(function(input, output) {
             geom_path(size = 1.2) +
             geom_path(data = cum_shift_data, 
                       aes(x = shift_time,
-                          y = cum_confirm), linetype = "dashed") +
+                          y = cum_confirm), linetype = "dashed", size = 1.2) +
+            geom_vline(xintercept = as.Date("2020-01-23"), colour = "black") +
+            annotate(geom = "text", label = "Wuhan \n lockdown",
+                     x = as.Date("2020-01-21"), y = 3e4, angle = 90) +
             scale_color_brewer(palette = "Set1") +
             scale_y_continuous(trans = "log1p", 
-                               breaks = 10^c(0:4), 
+                               breaks = c(10^c(0:5), 5*(10^c(0:4))), 
                                labels = scales::comma_format(accuracy = 1)) +
             labs(x = "Time", 
-                 y = "Cumulative confirmed cases",
-                 title = "Cumulative confirmed cases of COVID-19")
+                 y = "Cumulative confirmed cases \n (log-scale)",
+                 title = "Cumulative confirmed cases of COVID-19",
+                 subtitle = paste0("Dashed line shows the selected country lagged ", 
+                                   input$lag, " days")) +
+            theme(panel.grid.minor.y = element_blank())
     })
     
     output$added_plot = renderPlot({
@@ -54,24 +68,30 @@ shinyServer(function(input, output) {
         long_data %>% 
             ggplot(aes(x = time, y = added_cases,
                        colour = country)) +
-            geom_path() +
+            geom_path(size = 1.2) +
             geom_path(data = added_shift_data, 
                       aes(x = shift_time,
-                          y = added_cases), linetype = "dashed") +
+                          y = added_cases), linetype = "dashed", size = 1.2) +
+            geom_vline(xintercept = as.Date("2020-01-23"), colour = "black") +
+            annotate(geom = "text", label = "Wuhan \n lockdown",
+                     x = as.Date("2020-01-21"), y = 2e3, angle = 90) +
             scale_color_brewer(palette = "Set1") +
-            scale_y_continuous(trans = "log1p", breaks = 10^c(0:4)) + 
+            scale_y_continuous(trans = "log1p", 
+                               breaks = c(10^c(0:5), 5*(10^c(0:4))),
+                               labels = scales::comma_format(accuracy = 1)) + 
             labs(title = "Added cases through time",
                  subtitle = paste0("Dashed line shows the selected country lagged ", 
                                    input$lag, " days"),
                  x = "Time", 
-                 y = "Added cases (log-scale)") 
+                 y = "Added cases \n (log-scale)") +
+            theme(panel.grid.major.y = element_blank())
     })
     
-    output$crosscorr_plot = renderPlot({
-        wide_data = added_data_wide()
+    output$added_crosscorr_plot = renderPlot({
+        added_wide_data = added_data_wide()
         
-        ggCcf(wide_data %>% pull(China), 
-              wide_data %>% pull(input$country), 
+        ggCcf(added_wide_data %>% pull(China), 
+              added_wide_data %>% pull(input$country), 
               lag.max = 60) +
             scale_x_continuous(limits = c(NA, 0)) +
             labs(title = paste0("Cross-correlation between added cases in China and ", input$country),
@@ -79,7 +99,16 @@ shinyServer(function(input, output) {
             plot_layout(nrow = 2)
     })
     
-    
-    
+    output$cum_crosscorr_plot = renderPlot({
+        cum_data_wide = cum_data_wide()
+        
+        ggCcf(cum_data_wide %>% pull(China), 
+              cum_data_wide %>% pull(input$country), 
+              lag.max = 60) +
+            scale_x_continuous(limits = c(NA, 0)) +
+            labs(title = paste0("Cross-correlation between cumulative cases in China and ", input$country),
+                 subtitle = "Only lags behind China are shown") +
+            plot_layout(nrow = 2)
+    })
     
 })
