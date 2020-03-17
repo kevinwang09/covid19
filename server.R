@@ -20,13 +20,25 @@ shinyServer(function(input, output) {
     })
     
     output$cum_confirm_plot = renderPlot({
-        cum_data() %>% 
+        
+        cum_data = cum_data()
+        
+        cum_shift_data = cum_data %>% 
+            dplyr::filter(country == input$country) %>% 
+            dplyr::mutate(shift_time = time - input$lag)
+        
+        cum_data %>% 
             ggplot(aes(x = time,
                        y = cum_confirm,
                        colour = country)) +
             geom_path(size = 1.2) +
-            scale_y_log10(labels = scales::comma) +
+            geom_path(data = cum_shift_data, 
+                      aes(x = shift_time,
+                          y = cum_confirm), linetype = "dashed") +
             scale_color_brewer(palette = "Set1") +
+            scale_y_continuous(trans = "log1p", 
+                               breaks = 10^c(0:4), 
+                               labels = scales::comma_format(accuracy = 1)) +
             labs(x = "Time", 
                  y = "Cumulative confirmed cases",
                  title = "Cumulative confirmed cases of COVID-19")
@@ -35,7 +47,7 @@ shinyServer(function(input, output) {
     output$added_plot = renderPlot({
         long_data = added_data()
         
-        shift_data = long_data %>% 
+        added_shift_data = long_data %>% 
             dplyr::filter(country == input$country) %>% 
             dplyr::mutate(shift_time = time - input$lag)
 
@@ -43,7 +55,7 @@ shinyServer(function(input, output) {
             ggplot(aes(x = time, y = added_cases,
                        colour = country)) +
             geom_path() +
-            geom_path(data = shift_data, 
+            geom_path(data = added_shift_data, 
                       aes(x = shift_time,
                           y = added_cases), linetype = "dashed") +
             scale_color_brewer(palette = "Set1") +
