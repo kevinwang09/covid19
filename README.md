@@ -1,5 +1,13 @@
 # COVID-19 confirmed case visualisation
 
+# Motivations
+
+I am not an epidemiologist and nor do I want to pretend I am one. I wrote this app as a part of a lecture on developing Shiny apps. Any suggestions are welcomed. 
+
+I am currently in the USA looking at the speed of this outbreak. The daily news keeps getting worse except those from China (as of 15th March 2020) who reported a basic containment. I thought the best way to keep myself informed is to look at the data and do the analysis myself. I would like to use China as a point of reference to understand how the outbreak differs betwen different countries (if at all).
+
+
+
 # Instructions
 
 
@@ -24,13 +32,6 @@ shiny::runGitHub(
     username = "kevinwang09", 
     ref = "master")
 ```
-
-# Motivations
-
-I am currently in the USA looking at the speed of this outbreak. The daily news keeps getting worse except those from China (as of 15th March 2020) who reported a basic containment. I thought the best way to keep myself informed is to look at the data and do the analysis myself. I would like to use China as a point of reference to understand how the outbreak differs betwen different countries (if at all).
-
-I am writing materials for a lecture in Shiny apps, so any suggestions are welcomed. 
-
 
 # Acknowledgement
 
