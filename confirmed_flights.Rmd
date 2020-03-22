@@ -1,0 +1,139 @@
+---
+title: "Animating flights with confirmed cases of COVID19"
+author: "Kevin Wang"
+date: "15/03/2020"
+output: html_document
+---
+
+# Loading packages
+```{r}
+library(tidyverse)
+library(rvest)
+library(xml2)
+library(lubridate)
+library(gganimate)
+library(ggmap)
+library(plotly)
+```
+
+# Loading data
+```{r}
+url = "https://www.health.nsw.gov.au/Infectious/diseases/Pages/coronavirus-flights.aspx"
+```
+
+
+```{r}
+raw = xml2::read_html(url)
+
+## https://stackoverflow.com/questions/52855989/scrape-aspx-page-with-r
+raw_flights_tbl = raw %>%
+  rvest::html_node(xpath = ".//div[@id='ctl00_PlaceHolderMain_contentc1__ControlWrapper_RichHtmlField']/table") %>%
+  rvest::html_table() %>% 
+  as_tibble() %>% 
+  janitor::clean_names()
+
+raw_flights_tbl %>% class
+```
+
+
+# Clean data
+```{r}
+flights_tbl = raw_flights_tbl %>% 
+  dplyr::mutate(date_of_departure = date_of_departure %>% dmy() %>% as_datetime(),
+                date_of_arrival = date_of_arrival %>% dmy() %>% as_datetime()) %>%
+  tidyr::separate(col = origin_destination, 
+                  into = c("origin", "destination"),
+                  sep = "/") %>% 
+  tibble::rowid_to_column("plane_id") ## Avoid repeated flight_number
+
+glimpse(flights_tbl)
+```
+
+
+# Location query through Google Maps (API needed)
+```{r, eval = FALSE}
+all_geocode = tibble(
+  location = c(flights_tbl$origin, flights_tbl$destination) %>% unique,
+  geocode = purrr::map(location, ggmap::geocode))
+
+saveRDS(all_geocode, file = "data/all_geocode.rds")
+```
+
+
+
+```{r}
+all_geocode = readRDS("data/all_geocode.rds")
+
+flights_location_tbl = flights_tbl %>% 
+  left_join(all_geocode, by = c("origin" = "location")) %>% 
+  left_join(all_geocode, by = c("destination" = "location"), 
+            suffix = c("_origin", "_destination")) %>% 
+  unnest(c(geocode_origin, geocode_destination), names_sep = "_") 
+
+all_location_tbl = flights_tbl %>% 
+  dplyr::select(origin, destination) %>% 
+  group_by(origin, destination) %>% 
+  dplyr::mutate(count = n()) %>% 
+  pivot_longer(cols = c("origin", "destination"),
+               names_to = "location_type",
+               values_to = "location_value") %>% 
+  left_join(all_geocode, by = c("location_value" = "location")) %>% 
+  unnest(geocode)
+```
+
+# Plotly visualisations
+
+
+```{r}
+geo <- list(
+  scope = 'world',
+  projection = list(type = 'azimuthal equal area'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  countrycolor = toRGB("gray80")
+)
+
+fig <- plot_geo(locationmode = 'ISO-3', color = I("red"))
+
+fig <- fig %>% add_markers(
+  data = all_location_tbl, x = ~lon, y = ~lat, 
+  text = ~location_value, 
+  hoverinfo = "text", 
+  size = ~count,
+  alpha = 0.1)
+
+fig <- fig %>% add_segments(
+    data = flights_location_tbl,
+    x = ~geocode_origin_lon, xend = ~geocode_destination_lon,
+    y = ~geocode_origin_lat, yend = ~geocode_destination_lat,
+    text = ~flight,
+    hoverinfo = "text",
+    alpha = 0.3, 
+    size = I(3)
+    )
+
+fig <- fig %>% layout(
+    title = 'Flights with confirmed cases (source: NSW Health)',
+    geo = geo, showlegend = FALSE, height=800
+  )
+
+fig
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Session info
+```{r}
+sessioninfo::session_info()
+```
+
