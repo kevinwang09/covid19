@@ -71,18 +71,23 @@ flights_location_tbl = flights_tbl %>%
             suffix = c("_origin", "_destination")) %>% 
   unnest(c(geocode_origin, geocode_destination), names_sep = "_") %>% 
   group_by(origin, destination) %>% 
-  dplyr::mutate(collapse_flights = paste(flight %>% unique, collapse = ", "),
-    hover = glue("Origin: {origin} \n Dest: {destination} \n Flight: {collapse_flights}"))
+  dplyr::mutate(
+    collapse_flights = paste(flight %>% unique, collapse = ", "),
+    hover = glue("Origin: {origin} \n Dest: {destination} \n Flight: {collapse_flights}")) %>% 
+  group_by(origin) %>% 
+  dplyr::mutate(origin_tally = n()) %>% 
+  ungroup() %>% 
+  dplyr::mutate(date_of_departure = as.character(date_of_departure))
 
-all_location_tbl = flights_tbl %>% 
-  dplyr::select(origin, destination) %>% 
-  group_by(origin, destination) %>% 
-  dplyr::mutate(count = n()) %>% 
-  pivot_longer(cols = c("origin", "destination"),
-               names_to = "location_type",
-               values_to = "location_value") %>% 
-  left_join(all_geocode, by = c("location_value" = "location")) %>% 
-  unnest(geocode)
+# all_location_tbl = flights_tbl %>% 
+#   dplyr::select(origin, destination) %>% 
+#   group_by(origin, destination) %>% 
+#   dplyr::mutate(count = n()) %>% 
+#   pivot_longer(cols = c("origin", "destination"),
+#                names_to = "location_type",
+#                values_to = "location_value") %>% 
+#   left_join(all_geocode, by = c("location_value" = "location")) %>% 
+#   unnest(geocode)
 ```
 
 # Plotly visualisations
@@ -99,27 +104,54 @@ geo <- list(
 
 fig <- plot_geo(locationmode = 'ISO-3', color = I("red"))
 
-fig <- fig %>% add_markers(
-  data = all_location_tbl, x = ~lon, y = ~lat, 
-  # text = ~location_value, 
-  hoverinfo = "none",
-  size = ~count+2,
-  alpha = 0.9)
+# fig <- fig %>% add_markers(
+#   data = all_location_tbl, x = ~lon, y = ~lat, 
+#   # text = ~location_value, 
+#   hoverinfo = "none",
+#   size = ~count+2,
+#   alpha = 0.9)
+# 
+# fig <- fig %>% add_segments(
+#     data = flights_location_tbl,
+#     x = ~geocode_origin_lon, xend = ~geocode_destination_lon,
+#     y = ~geocode_origin_lat, yend = ~geocode_destination_lat,
+#     text = ~hover,
+#     hoverinfo = "text",
+#     alpha = 0.3, 
+#     size = I(3)
+#     )
 
-fig <- fig %>% add_segments(
+fig <- fig %>% 
+  add_markers(
+    data = flights_location_tbl, x = ~geocode_origin_lon, y = ~geocode_origin_lat, 
+    # text = ~location_value, 
+    size = ~origin_tally,
+    hoverinfo = "none",
+    alpha = 0.5) %>% 
+  add_markers(
+    data = flights_location_tbl, x = ~geocode_destination_lon, y = ~geocode_destination_lat, 
+    # text = ~location_value, 
+    hoverinfo = "none",
+    alpha = 0.9) %>% 
+  add_text(data = flights_location_tbl, x = ~geocode_origin_lon, y = ~geocode_origin_lat, 
+           text = ~origin,
+           color = I("black"),
+           textposition = "top right") %>% 
+  add_segments(
     data = flights_location_tbl,
     x = ~geocode_origin_lon, xend = ~geocode_destination_lon,
     y = ~geocode_origin_lat, yend = ~geocode_destination_lat,
+    frame = ~date_of_departure,
     text = ~hover,
     hoverinfo = "text",
     alpha = 0.3, 
-    size = I(3)
-    )
+    size = I(3))
+
 
 fig <- fig %>% layout(
-    title = 'Flights with confirmed cases (source: NSW Health)',
-    geo = geo, showlegend = FALSE, height=800
-  )
+  title = 'Flights with confirmed cases (source: NSW Health)',
+  geo = geo, showlegend = FALSE, height=800
+)
 
 fig
 ```
