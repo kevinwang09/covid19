@@ -14,6 +14,7 @@ library(lubridate)
 library(gganimate)
 library(ggmap)
 library(plotly)
+library(glue)
 ```
 
 # Loading data
@@ -68,7 +69,10 @@ flights_location_tbl = flights_tbl %>%
   left_join(all_geocode, by = c("origin" = "location")) %>% 
   left_join(all_geocode, by = c("destination" = "location"), 
             suffix = c("_origin", "_destination")) %>% 
-  unnest(c(geocode_origin, geocode_destination), names_sep = "_") 
+  unnest(c(geocode_origin, geocode_destination), names_sep = "_") %>% 
+  group_by(origin, destination) %>% 
+  dplyr::mutate(collapse_flights = paste(flight %>% unique, collapse = ", "),
+    hover = glue("Origin: {origin} \n Dest: {destination} \n Flight: {collapse_flights}"))
 
 all_location_tbl = flights_tbl %>% 
   dplyr::select(origin, destination) %>% 
@@ -97,16 +101,16 @@ fig <- plot_geo(locationmode = 'ISO-3', color = I("red"))
 
 fig <- fig %>% add_markers(
   data = all_location_tbl, x = ~lon, y = ~lat, 
-  text = ~location_value, 
-  hoverinfo = "text", 
-  size = ~count,
-  alpha = 0.1)
+  # text = ~location_value, 
+  hoverinfo = "none",
+  size = ~count+2,
+  alpha = 0.9)
 
 fig <- fig %>% add_segments(
     data = flights_location_tbl,
     x = ~geocode_origin_lon, xend = ~geocode_destination_lon,
     y = ~geocode_origin_lat, yend = ~geocode_destination_lat,
-    text = ~flight,
+    text = ~hover,
     hoverinfo = "text",
     alpha = 0.3, 
     size = I(3)
