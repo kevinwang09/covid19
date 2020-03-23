@@ -2,11 +2,21 @@
 title: "Animating flights with confirmed cases of COVID19"
 author: "Kevin Wang"
 date: "15/03/2020"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
+    fig_height: 10
+    fig_width: 10
+    toc: yes
+    number_sections: true
+    toc_depth: 3
+    toc_float: yes
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Loading packages
-```{r}
+```{r, message = FALSE}
 library(tidyverse)
 library(rvest)
 library(xml2)
@@ -32,8 +42,6 @@ raw_flights_tbl = raw %>%
   rvest::html_table() %>% 
   as_tibble() %>% 
   janitor::clean_names()
-
-raw_flights_tbl %>% class
 ```
 
 
@@ -46,8 +54,6 @@ flights_tbl = raw_flights_tbl %>%
                   into = c("origin", "destination"),
                   sep = "/") %>% 
   tibble::rowid_to_column("plane_id") ## Avoid repeated flight_number
-
-glimpse(flights_tbl)
 ```
 
 
@@ -62,7 +68,7 @@ saveRDS(all_geocode, file = "data/all_geocode.rds")
 
 
 
-```{r}
+```{r, warning=FALSE}
 all_geocode = readRDS("data/all_geocode.rds")
 
 flights_location_tbl = flights_tbl %>% 
@@ -93,7 +99,7 @@ flights_location_tbl = flights_tbl %>%
 # Plotly visualisations
 
 
-```{r}
+```{r, warning=FALSE}
 geo <- list(
   scope = 'world',
   projection = list(type = 'azimuthal equal area'),
@@ -155,15 +161,6 @@ fig <- fig %>% layout(
 
 fig
 ```
-
-
-
-
-
-
-
-
-
 
 
 
