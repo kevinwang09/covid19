@@ -10,7 +10,6 @@ output:
     toc: yes
     number_sections: true
     toc_depth: 3
-    toc_float: yes
 editor_options: 
   chunk_output_type: console
 ---
@@ -46,7 +45,7 @@ raw_flights_tbl = raw %>%
 
 
 # Clean data
-```{r}
+```{r, warning=FALSE}
 flights_tbl = raw_flights_tbl %>% 
   dplyr::mutate(date_of_departure = date_of_departure %>% dmy() %>% as_datetime(),
                 date_of_arrival = date_of_arrival %>% dmy() %>% as_datetime()) %>%
